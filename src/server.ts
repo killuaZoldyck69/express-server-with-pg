@@ -1,4 +1,4 @@
-import express, { Request, Response } from "express";
+import express, { NextFunction, Request, Response } from "express";
 import { Pool } from "pg";
 import dotenv from "dotenv";
 import path from "path";
@@ -9,6 +9,12 @@ dotenv.config({ path: path.join(process.cwd(), ".env") });
 
 // parser
 app.use(express.json());
+
+// middleware
+const logger = (req: Request, res: Response, next: NextFunction) => {
+  console.log(`[${new Date().toISOString()}]`);
+  next();
+};
 
 // DB connection
 const pool = new Pool({
@@ -44,7 +50,7 @@ const initDB = async () => {
 
 initDB();
 
-app.get("/", (req: Request, res: Response) => {
+app.get("/", logger, (req: Request, res: Response) => {
   res.send("Hello");
 });
 
@@ -176,6 +182,15 @@ app.delete("/users/:id", async (req: Request, res: Response) => {
       details: error.detail,
     });
   }
+});
+
+// route not found
+app.use((req: Request, res: Response) => {
+  res.status(404).json({
+    success: false,
+    message: "Invalid route",
+    path: req.path,
+  });
 });
 
 app.listen(port, () => {
